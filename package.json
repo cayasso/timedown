@@ -1,0 +1,30 @@
+{
+  "name": "timedown",
+  "version": "0.1.0",
+  "description": "A multi countdown timer for node with namespace",
+  "author": {
+    "name": "Jonathan Brumley",
+    "email": "cayasso@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cayasso/timedown.git"
+  },
+  "scripts": {
+    "test": "make test"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "should": "*",
+    "pre-commit": "1.1.1"
+  },
+  "dependencies": {
+    "eventemitter3": "^1.1.1",
+    "ms": "^0.7.1",
+    "tick-tock": "^1.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/cayasso/timedown/issues"
+  },
+  "homepage": "https://github.com/cayasso/timedown"
+}
