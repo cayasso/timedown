@@ -2,9 +2,8 @@
 
 [![Build Status](https://img.shields.io/travis/cayasso/timedown/master.svg)](https://travis-ci.org/cayasso/timedown)
 [![NPM version](https://img.shields.io/npm/v/timedown.svg)](https://www.npmjs.com/package/timedown)
-[![Coverage Status](https://img.shields.io/coveralls/cayasso/timedown/master.svg)](https://coveralls.io/r/cayasso/timedown)
 
-A multi countdown timer for node with namespace.
+A multi countdown timer for node with namespaces.
 
 ## Installation
 
