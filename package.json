@@ -14,7 +14,7 @@
   "scripts": {
     "test": "mocha",
     "build": "make dist",
-    "postinstall": "make",
+    "postinstall": "make"
   },
   "devDependencies": {
     "babelify": "^6.3.0",
