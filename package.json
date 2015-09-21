@@ -13,7 +13,8 @@
   "main": "./node/index",
   "scripts": {
     "test": "mocha",
-    "postinstall": "make"
+    "build": "make dist",
+    "postinstall": "make",
   },
   "devDependencies": {
     "babelify": "^6.3.0",
