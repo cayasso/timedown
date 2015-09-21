@@ -16,9 +16,11 @@
     "postinstall": "make"
   },
   "devDependencies": {
+    "babelify": "^6.3.0",
+    "browserify": "^11.1.0",
     "mocha": "*",
-    "should": "*",
-    "pre-commit": "1.1.1"
+    "pre-commit": "1.1.1",
+    "should": "*"
   },
   "dependencies": {
     "babel": "^5.8.23",
