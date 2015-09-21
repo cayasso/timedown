@@ -10,6 +10,7 @@
     "type": "git",
     "url": "git+https://github.com/cayasso/timedown.git"
   },
+  "main": "./node/index",
   "scripts": {
     "test": "mocha",
     "postinstall": "make"
