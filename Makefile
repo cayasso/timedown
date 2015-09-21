@@ -1,8 +1,12 @@
-test:
-	@./node_modules/.bin/mocha \
-		--reporter spec \
-		--require should \
-		--recursive \
-		test
+BABEL = ./node_modules/.bin/babel
 
-.PHONY: test
+all: node
+
+node: lib
+	@mkdir -p node/
+	$(BABEL) lib -d node
+
+clean:
+	rm -rf node/
+
+.PHONY: clean

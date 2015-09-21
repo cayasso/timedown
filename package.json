@@ -11,7 +11,8 @@
     "url": "git+https://github.com/cayasso/timedown.git"
   },
   "scripts": {
-    "test": "make test"
+    "test": "mocha",
+    "postinstall": "make"
   },
   "devDependencies": {
     "mocha": "*",
@@ -19,8 +20,10 @@
     "pre-commit": "1.1.1"
   },
   "dependencies": {
+    "babel": "^5.8.23",
     "eventemitter3": "^1.1.1",
     "ms": "^0.7.1",
+    "should": "^7.1.0",
     "tick-tock": "^1.0.0"
   },
   "bugs": {
