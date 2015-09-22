@@ -44,6 +44,22 @@ describe('TimeDown', () => {
     countdown.refresh.should.be.eql(10);
   });
 
+  it('should destroy countdown', (done) => {
+    let countdown = timer.ns(TimeDown.id, '10s');
+    countdown.on('started', function(){});
+    countdown.on('tick', function(){});
+    countdown.on('stopped', function(){});
+    countdown.on('ended', function(){});
+    countdown.start();
+    countdown.on('deleted', done);
+    countdown.delete();
+    (countdown.timer === undefined).should.be.ok;
+    (countdown.ending === undefined).should.be.ok;
+    (countdown.refresh === undefined).should.be.ok;
+    countdown.listeners().should.be.empty();
+    countdown.status.should.be.eql('DESTROYED');
+  });
+
   it('should be able to change the countdown duration during reset', () => {
     let countdown = timer.ns(TimeDown.id, '10s');
     countdown.duration.should.be.eql(10000);
@@ -68,11 +84,19 @@ describe('TimeDown', () => {
     countdown.on('ending', function() {
       countdown.start();
     });
-    countdown.on('end', (time) => {
+    countdown.on('ended', (time) => {
       let endTime = Date.now();
       (endTime - startTime).should.be.belowOrEqual(510);
       done();
     });
+  });
+
+  it('should emit started event', (done) => {
+    let countdown = timer.ns(TimeDown.id, '500ms', { refresh: '5ms', ending: '20ms' });
+    countdown.on('started', (time) => {
+      done();
+    });
+    countdown.start();
   });
 
   it('should emit ending event', (done) => {
@@ -84,13 +108,23 @@ describe('TimeDown', () => {
     });
   });
 
-  it('should emit end event', (done) => {
+  it('should emit ended event', (done) => {
     let countdown = timer.ns(TimeDown.id, '500ms');
     countdown.start();
-    countdown.on('end', () => {
+    countdown.on('ended', () => {
       countdown.stop();
       done();
     });
+  });
+
+  it('should emit stopped event', (done) => {
+    let countdown = timer.ns(TimeDown.id, '500ms');
+    countdown.start();
+    countdown.on('stopped', () => {
+      done();
+    });
+    countdown.stop();
+
   });
 
   it('should allow stopping countdown', (done) => {
@@ -111,7 +145,7 @@ describe('TimeDown', () => {
       setTimeout(() => {
         countdown.start();
         countdown.status.should.be.eql('STARTED');
-        countdown.on('end', (time) => {
+        countdown.on('ended', (time) => {
           countdown.stop();
           done();
         });
