@@ -28,7 +28,8 @@
     "eventemitter3": "^1.1.1",
     "ms": "^0.7.1",
     "should": "^7.1.0",
-    "tick-tock": "^1.0.0"
+    "tick-tock": "^1.0.0",
+    "timedown": "^1.0.5"
   },
   "bugs": {
     "url": "https://github.com/cayasso/timedown/issues"
