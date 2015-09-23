@@ -105,7 +105,7 @@ var Counter = (function (_Emitter) {
   }, {
     key: 'start',
     value: function start() {
-      if (/START|ENDED/.test(this.status)) return this;
+      if (Counter.STARTED === this.status || Counter.ENDED === this.status) return this;
       this.set('start');
       return this;
     }
@@ -120,7 +120,7 @@ var Counter = (function (_Emitter) {
   }, {
     key: 'stop',
     value: function stop() {
-      if (/STOPPED|ENDED/.test(this.status)) return this;
+      if (Counter.STOPPED === this.status || Counter.ENDED === this.status) return this;
       this.set('stop');
       return this;
     }
@@ -131,13 +131,36 @@ var Counter = (function (_Emitter) {
      * @param {Number|String} time
      * @param {Object} [options]
      * @return {Counter} this
-     * @api private
+     * @api public
      */
 
   }, {
     key: 'reset',
     value: function reset(time, options) {
       return this.constructor(this.timer, this.ns, time || this.duration, options);
+    }
+
+    /**
+     * Destroy timer.
+     *
+     * @return {Counter} this
+     * @api public
+     */
+
+  }, {
+    key: 'delete',
+    value: function _delete() {
+      var timer = this.timer;
+      delete this.timer;
+      delete this.ns;
+      delete this.duration;
+      delete this.ending;
+      delete this.refresh;
+      this.status = Counter.DESTROYED;
+      this.emit('delete');
+      timer.emit('delete', this);
+      this.removeAllListeners();
+      return this;
     }
 
     /**
@@ -177,6 +200,7 @@ var Counter = (function (_Emitter) {
 
       (function interval() {
 
+        if (Counter.DESTROYED === ctx.status) return;
         if (Counter.STOPPED === ctx.status) return;
 
         if (Counter.STOPPED === status) {
@@ -214,16 +238,20 @@ var Counter = (function (_Emitter) {
 
 exports['default'] = Counter;
 
+Counter.ENDED = 'ENDED';
 Counter.CREATED = 'CREATED';
 Counter.STARTED = 'STARTED';
 Counter.STOPPED = 'STOPPED';
-Counter.ENDED = 'ENDED';
+Counter.DESTROYED = 'DESTROYED';
 module.exports = exports['default'];
 
 },{"eventemitter3":187,"ms":188}],2:[function(require,module,exports){
+(function (global){
 'use strict';
 
 // es6 runtime requirements
+// In node.js env, polyfill might be already loaded (from any npm package),
+// that's why we do this check.
 Object.defineProperty(exports, '__esModule', {
   value: true
 });
@@ -256,7 +284,9 @@ var _tickTock = require('tick-tock');
 
 var _tickTock2 = _interopRequireDefault(_tickTock);
 
-require('babel/polyfill');
+if (!global._babelPolyfill) {
+  require('babel/polyfill');
+}
 var Timer = (function (_Emitter) {
   _inherits(Timer, _Emitter);
 
@@ -293,8 +323,6 @@ var Timer = (function (_Emitter) {
       if (!counter) {
         counter = new _counter2['default'](this, id, time, options);
         this.counters.set(id, counter);
-      } else {
-        counter = counter.reset(time, options);
       }
       return counter;
     }
@@ -350,6 +378,41 @@ var Timer = (function (_Emitter) {
     }
 
     /**
+     * Destroy timer.
+     *
+     * @param {String} id
+     * @return {Timer} this
+     * @api private
+     */
+
+  }, {
+    key: 'delete',
+    value: function _delete(id) {
+      var counter = this.counters.get(id);
+      if (counter) {
+        counter['delete']();
+        this.counters['delete'](id);
+      }
+      return this;
+    }
+
+    /**
+     * Destroy timer.
+     *
+     * @return {Timer} this
+     * @api private
+     */
+
+  }, {
+    key: 'destroy',
+    value: function destroy() {
+      this.tock.end();
+      this.counters.clear();
+      this.removeListener();
+      return this;
+    }
+
+    /**
      * Method to extend the object.
      * 
      * @param {Function} fn
@@ -376,6 +439,7 @@ Factory.Timer = Timer;
 Factory.Counter = _counter2['default'];
 module.exports = exports['default'];
 
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"./counter":1,"babel/polyfill":185,"eventemitter3":187,"tick-tock":189}],3:[function(require,module,exports){
 (function (global){
 "use strict";

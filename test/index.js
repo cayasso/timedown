@@ -46,12 +46,12 @@ describe('TimeDown', () => {
 
   it('should destroy countdown', (done) => {
     let countdown = timer.ns(TimeDown.id, '10s');
-    countdown.on('started', function(){});
+    countdown.on('start', function(){});
     countdown.on('tick', function(){});
-    countdown.on('stopped', function(){});
-    countdown.on('ended', function(){});
+    countdown.on('stop', function(){});
+    countdown.on('end', function(){});
     countdown.start();
-    countdown.on('deleted', done);
+    countdown.on('delete', done);
     countdown.delete();
     (countdown.timer === undefined).should.be.ok;
     (countdown.ending === undefined).should.be.ok;
@@ -77,30 +77,90 @@ describe('TimeDown', () => {
     });
   });
 
-  it('should not start a started affect started counter when sending multiple starts', (done) => {
-    let countdown = timer.ns(TimeDown.id, '500ms', { refresh: '5ms', ending: '20ms' });
-    countdown.start();
-    let startTime = Date.now();
-    countdown.on('ending', function() {
+  it('should not start if counter is already started', (done) => {
+    let countdown = timer.ns(TimeDown.id, '100ms', { refresh: '5ms', ending: '20ms' });
+    countdown.on('start', function() {
       countdown.start();
     });
-    countdown.on('ended', (time) => {
-      let endTime = Date.now();
-      (endTime - startTime).should.be.belowOrEqual(510);
+    countdown.on('end', done);
+    countdown.start();
+    countdown.start();
+  });
+
+  it('should not start if counter is already ended', (done) => {
+    let countdown = timer.ns(TimeDown.id, '100ms', { refresh: '5ms', ending: '20ms' });
+    countdown.on('end', function() {
+      countdown.start();
+      countdown.start();
       done();
     });
+    countdown.start();
+  });
+
+  it('should not stop if counter is already stopped', (done) => {
+    let countdown = timer.ns(TimeDown.id, '100ms', { refresh: '5ms', ending: '20ms' });
+    countdown.on('stop', function() {
+      countdown.stop();
+      countdown.stop();
+      done();
+    });
+    countdown.start();
+    countdown.stop();
+  });
+
+  it('should not stop if counter is already ended', (done) => {
+    let countdown = timer.ns(TimeDown.id, '100ms', { refresh: '5ms', ending: '20ms' });
+    countdown.on('end', function() {
+      countdown.stop();
+      countdown.stop();
+      done();
+    });
+    countdown.on('stop', done);
+    countdown.start();
+  });
+
+  it('should restart after stop', (done) => {
+    
+    let startTime, stopTime;
+    let countdown = timer.ns(TimeDown.id, '100ms', { refresh: '5ms', ending: '20ms' });
+    countdown.on('start', function(time) {
+      startTime = time.ms;
+    });
+
+    countdown.on('stop', function(time) {
+      stopTime = time.ms;
+      countdown.ms.should.be.eql(stopTime);
+    });
+
+    countdown.on('end', function() {
+      stopTime.should.be.eql(startTime);
+      (Date.now() - started).should.be.belowOrEqual(165);
+      done();
+    });
+    
+    countdown.start();
+
+    let started = Date.now();
+
+    setTimeout(function() {
+      countdown.stop();
+      setTimeout(function() {
+        countdown.start();
+      }, 50);
+    }, 50);
+
   });
 
   it('should emit started event', (done) => {
     let countdown = timer.ns(TimeDown.id, '500ms', { refresh: '5ms', ending: '20ms' });
-    countdown.on('started', (time) => {
+    countdown.on('start', (time) => {
       done();
     });
     countdown.start();
   });
 
   it('should emit ending event', (done) => {
-    let countdown = timer.ns(TimeDown.id, '500ms', { refresh: '5ms', ending: '20ms' });
+    let countdown = timer.ns(TimeDown.id, '100ms', { refresh: '5ms', ending: '20ms' });
     countdown.start();
     countdown.on('ending', (time) => {
       countdown.stop();
@@ -109,9 +169,9 @@ describe('TimeDown', () => {
   });
 
   it('should emit ended event', (done) => {
-    let countdown = timer.ns(TimeDown.id, '500ms');
+    let countdown = timer.ns(TimeDown.id, '100ms');
     countdown.start();
-    countdown.on('ended', () => {
+    countdown.on('end', () => {
       countdown.stop();
       done();
     });
@@ -120,7 +180,7 @@ describe('TimeDown', () => {
   it('should emit stopped event', (done) => {
     let countdown = timer.ns(TimeDown.id, '500ms');
     countdown.start();
-    countdown.on('stopped', () => {
+    countdown.on('stop', () => {
       done();
     });
     countdown.stop();
@@ -137,7 +197,7 @@ describe('TimeDown', () => {
   });
 
   it('should allow stopping and starting a countdown', (done) => {
-    let countdown = timer.ns(TimeDown.id, '500ms', { ending: 0 });
+    let countdown = timer.ns(TimeDown.id, '100ms', { ending: 0 });
     countdown.start();
     setTimeout(() => {
       countdown.stop();
@@ -145,7 +205,7 @@ describe('TimeDown', () => {
       setTimeout(() => {
         countdown.start();
         countdown.status.should.be.eql('STARTED');
-        countdown.on('ended', (time) => {
+        countdown.on('end', (time) => {
           countdown.stop();
           done();
         });
@@ -154,14 +214,28 @@ describe('TimeDown', () => {
   });
 
   it('should allow resetting countdown', (done) => {
-    let countdown = timer.ns(TimeDown.id, '500ms');
-    countdown.start();
+    let countdown = timer.ns(TimeDown.id, '100ms');
     countdown.on('tick', () => {
       countdown.reset();
       countdown.status.should.be.eql('CREATED');
-      countdown.ms.should.be.eql(0);
+      countdown.ms.should.be.eql(100);
       done();
     });
+    countdown.start();
+  });
+
+  it('should allow resetting and starting countdown', (done) => {
+    let counter = 0;
+    let countdown = timer.ns(TimeDown.id, '100ms');
+    countdown.on('end', function() {
+      if (++counter > 2) 
+      done();
+    });
+    countdown.start();
+    countdown.reset();
+    countdown.start();
+    countdown.reset();
+    countdown.start();
   });
 
 });
