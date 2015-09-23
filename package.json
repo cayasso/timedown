@@ -1,6 +1,6 @@
 {
   "name": "timedown",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A multi countdown timer for node with namespace",
   "author": {
     "name": "Jonathan Brumley",
