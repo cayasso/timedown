@@ -13,5 +13,3 @@ dist: lib
 
 clean:
 	rm -rf node/
-
-.PHONY: all dist node clean
