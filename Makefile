@@ -14,4 +14,4 @@ dist: lib
 clean:
 	rm -rf node/
 
-.PHONY: all clean
+.PHONY: all clean node
