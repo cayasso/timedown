@@ -225,12 +225,8 @@ describe('TimeDown', () => {
   });
 
   it('should allow resetting and starting countdown', (done) => {
-    let counter = 0;
     let countdown = timer.ns(TimeDown.id, '100ms');
-    countdown.on('end', function() {
-      if (++counter > 2) 
-      done();
-    });
+    countdown.on('end', done);
     countdown.start();
     countdown.reset();
     countdown.start();

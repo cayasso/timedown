@@ -11,7 +11,7 @@ Object.defineProperty(exports, '__esModule', {
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
-var _get = function get(_x2, _x3, _x4) { var _again = true; _function: while (_again) { var object = _x2, property = _x3, receiver = _x4; desc = parent = getter = undefined; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x2 = parent; _x3 = property; _x4 = receiver; _again = true; continue _function; } } else if ('value' in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
+var _get = function get(_x4, _x5, _x6) { var _again = true; _function: while (_again) { var object = _x4, property = _x5, receiver = _x6; desc = parent = getter = undefined; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x4 = parent; _x5 = property; _x6 = receiver; _again = true; continue _function; } } else if ('value' in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
@@ -37,7 +37,7 @@ var Counter = (function (_Emitter) {
   _inherits(Counter, _Emitter);
 
   /**
-   * Initialize object.
+   * Class constructor.
    *
    * @param {Timer} timer
    * @param {String} name
@@ -54,26 +54,43 @@ var Counter = (function (_Emitter) {
 
     _get(Object.getPrototypeOf(Counter.prototype), 'constructor', this).call(this);
     this.timer = timer;
-    this.stop();
-    this.ms = 0;
     this.ns = String(name);
-    var refresh = 'refresh' in options ? options.refresh : '10ms';
-    var ending = 'ending' in options ? options.ending : '10s';
-    this.duration = 'number' === typeof time ? time : (0, _ms2['default'])(time);
-    this.ending = 'number' === typeof ending ? ending : (0, _ms2['default'])(ending);
-    this.refresh = 'number' === typeof refresh ? refresh : (0, _ms2['default'])(refresh);
-    this.status = Counter.CREATED;
+    this.options = options;
+    this.init(time, options);
   }
 
   /**
-   * Set time duration.
+   * Initialize object.
    *
    * @param {Number|String} time
+   * @param {Object} [options]
    * @return {Counter} this
    * @api public
    */
 
   _createClass(Counter, [{
+    key: 'init',
+    value: function init(time) {
+      var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+      var refresh = 'refresh' in options ? options.refresh : '10ms';
+      var ending = 'ending' in options ? options.ending : '10s';
+      this.ms = this.duration = 'number' === typeof time ? time : (0, _ms2['default'])(time);
+      this.ending = 'number' === typeof ending ? ending : (0, _ms2['default'])(ending);
+      this.refresh = 'number' === typeof refresh ? refresh : (0, _ms2['default'])(refresh);
+      this.status = Counter.CREATED;
+      return this;
+    }
+
+    /**
+     * Set time duration.
+     *
+     * @param {Number|String} time
+     * @return {Counter} this
+     * @api public
+     */
+
+  }, {
     key: 'refresh',
     value: function refresh(time) {
       this.duration = 'number' === typeof time ? time : (0, _ms2['default'])(time);
@@ -106,7 +123,9 @@ var Counter = (function (_Emitter) {
     key: 'start',
     value: function start() {
       if (Counter.STARTED === this.status || Counter.ENDED === this.status) return this;
-      this.set('start');
+      this.status = Counter.STARTED;
+      this.emits('start', { ms: this.ms });
+      setImmediate(this.tick.bind(this));
       return this;
     }
 
@@ -121,7 +140,28 @@ var Counter = (function (_Emitter) {
     key: 'stop',
     value: function stop() {
       if (Counter.STOPPED === this.status || Counter.ENDED === this.status) return this;
-      this.set('stop');
+      this.status = Counter.STOPPED;
+      this.emits('stop', { ms: this.ms });
+      this.timer.tock.clear(this.ns);
+      return this;
+    }
+
+    /**
+     * End timer.
+     *
+     * @return {Counter} this
+     * @api private
+     */
+
+  }, {
+    key: 'end',
+    value: function end() {
+      if (Counter.ENDED === this.status) return this;
+      this.ms = 0;
+      this.status = Counter.ENDED;
+      this.timer.tock.clear(this.ns);
+      this.emits('end');
+      this.reset(null, null, true);
       return this;
     }
 
@@ -130,6 +170,7 @@ var Counter = (function (_Emitter) {
      *
      * @param {Number|String} time
      * @param {Object} [options]
+     * @param {Boolean} [silent]
      * @return {Counter} this
      * @api public
      */
@@ -137,7 +178,16 @@ var Counter = (function (_Emitter) {
   }, {
     key: 'reset',
     value: function reset(time, options) {
-      return this.constructor(this.timer, this.ns, time || this.duration, options);
+      var silent = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
+
+      time = time || this.duration;
+      options = options || this.options;
+      if (this.timer.tock.active(this.ns)) {
+        this.timer.tock.clear(this.ns);
+      }
+      this.init(time, options);
+      if (!silent) this.emits('reset', { ms: this.ms });
+      return this;
     }
 
     /**
@@ -150,17 +200,30 @@ var Counter = (function (_Emitter) {
   }, {
     key: 'delete',
     value: function _delete() {
-      var timer = this.timer;
-      delete this.timer;
       delete this.ns;
       delete this.duration;
       delete this.ending;
       delete this.refresh;
       this.status = Counter.DESTROYED;
-      this.emit('delete');
-      timer.emit('delete', this);
+      this.emits('delete');
       this.removeAllListeners();
       return this;
+    }
+
+    /**
+     * Emits events on timer and counter.
+     *
+     * @param {String} name
+     * @param {Object} data
+     * @return {Counter} this
+     * @api public
+     */
+
+  }, {
+    key: 'emits',
+    value: function emits(name, data) {
+      this.emit(name, data);
+      this.timer.emit(name, this, data);
     }
 
     /**
@@ -172,64 +235,27 @@ var Counter = (function (_Emitter) {
      */
 
   }, {
-    key: 'set',
-    value: function set(action) {
-
-      var e = null;
+    key: 'tick',
+    value: function tick() {
       var ctx = this;
-      var ns = ctx.ns;
+      var ms = ctx.ms;
+      var ending = false;
       var start = Date.now();
-      var status = ctx.status;
-      var duration = ctx.duration;
-      var isEndingEmitted = false;
-
-      if ('stop' === action) {
-        e = { ms: ctx.ms };
-        ctx.status = Counter.STOPPED;
-        ctx.emit('stop', e);
-        ctx.timer.emit('stop', ctx, e);
-        return ctx;
-      }
-
-      if ('start' === action) {
-        e = { ms: ctx.ms || duration };
-        ctx.status = Counter.STARTED;
-        ctx.emit('start', e);
-        ctx.timer.emit('start', ctx, e);
-      }
-
-      (function interval() {
-
-        if (Counter.DESTROYED === ctx.status) return;
+      (function next() {
+        if (Counter.ENDED === ctx.status) return;
+        if (Counter.CREATED === ctx.status) return;
         if (Counter.STOPPED === ctx.status) return;
-
-        if (Counter.STOPPED === status) {
-          status = ctx.status;
-          duration = ctx.duration - ctx.ms;
+        ctx.ms = ms - (Date.now() - start | 0);
+        var e = { ms: ctx.ms };
+        if (ctx.ms <= 0) return ctx.end();
+        if (!ending && ctx.ms < ctx.ending) {
+          ending = true;
+          ctx.emits('ending', e);
         }
-
-        ctx.ms = duration - (Date.now() - start | 0);
-
-        if (ctx.ms > 0) {
-          e = { ms: ctx.ms };
-          ctx.emit('tick', e);
-          ctx.timer.emit('tick', ctx, e);
-          ctx.timer.tock.setTimeout(ns, interval, ctx.refresh);
-          if (!isEndingEmitted && ctx.ms < ctx.ending) {
-            isEndingEmitted = true;
-            ctx.emit('ending', e);
-            ctx.timer.emit('ending', ctx, e);
-          }
-        } else {
-          ctx.ms = 0;
-          ctx.timer.tock.clear(ns);
-          ctx.status = Counter.ENDED;
-          ctx.emit('end');
-          ctx.timer.emit('end', ctx);
-        }
+        ctx.emits('tick', e);
+        ctx.timer.tock.setTimeout(ctx.ns, next, ctx.refresh);
       })();
-
-      return ctx;
+      return this;
     }
   }]);
 
@@ -389,10 +415,9 @@ var Timer = (function (_Emitter) {
     key: 'delete',
     value: function _delete(id) {
       var counter = this.counters.get(id);
-      if (counter) {
-        counter['delete']();
-        this.counters['delete'](id);
-      }
+      if (!counter) return this;
+      this.counters['delete'](id);
+      counter['delete']();
       return this;
     }
 
