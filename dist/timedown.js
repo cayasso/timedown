@@ -11,7 +11,7 @@ Object.defineProperty(exports, '__esModule', {
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
-var _get = function get(_x4, _x5, _x6) { var _again = true; _function: while (_again) { var object = _x4, property = _x5, receiver = _x6; desc = parent = getter = undefined; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x4 = parent; _x5 = property; _x6 = receiver; _again = true; continue _function; } } else if ('value' in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
+var _get = function get(_x5, _x6, _x7) { var _again = true; _function: while (_again) { var object = _x5, property = _x6, receiver = _x7; desc = parent = getter = undefined; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x5 = parent; _x6 = property; _x7 = receiver; _again = true; continue _function; } } else if ('value' in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
@@ -26,6 +26,9 @@ var _eventemitter32 = _interopRequireDefault(_eventemitter3);
 var _ms = require('ms');
 
 var _ms2 = _interopRequireDefault(_ms);
+
+var RATE = 10;
+var ENDING = 5000;
 
 /**
  * Counter statuses.
@@ -54,6 +57,7 @@ var Counter = (function (_Emitter) {
 
     _get(Object.getPrototypeOf(Counter.prototype), 'constructor', this).call(this);
     this.timer = timer;
+    this._duration = 0;
     this.ns = String(name);
     this.options = options;
     this.init(time, options);
@@ -70,14 +74,13 @@ var Counter = (function (_Emitter) {
 
   _createClass(Counter, [{
     key: 'init',
-    value: function init(time) {
-      var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+    value: function init(time, _ref) {
+      var refresh = _ref.refresh;
+      var ending = _ref.ending;
 
-      var refresh = 'refresh' in options ? options.refresh : '10ms';
-      var ending = 'ending' in options ? options.ending : '10s';
-      this.ms = this.duration = 'number' === typeof time ? time : (0, _ms2['default'])(time);
-      this.ending = 'number' === typeof ending ? ending : (0, _ms2['default'])(ending);
-      this.refresh = 'number' === typeof refresh ? refresh : (0, _ms2['default'])(refresh);
+      this.duration(time);
+      this.ending(ending);
+      this.refresh(refresh);
       this.status = Counter.CREATED;
       return this;
     }
@@ -85,15 +88,18 @@ var Counter = (function (_Emitter) {
     /**
      * Set time duration.
      *
-     * @param {Number|String} time
+     * @param {Number|String} rate
      * @return {Counter} this
      * @api public
      */
 
   }, {
     key: 'refresh',
-    value: function refresh(time) {
-      this.duration = 'number' === typeof time ? time : (0, _ms2['default'])(time);
+    value: function refresh() {
+      var rate = arguments.length <= 0 || arguments[0] === undefined ? RATE : arguments[0];
+
+      if (!arguments.length) return this._refresh;
+      this._refresh = this.tms(rate, RATE);
       return this;
     }
 
@@ -106,9 +112,28 @@ var Counter = (function (_Emitter) {
      */
 
   }, {
-    key: 'time',
-    value: function time(_time) {
-      this.duration = 'number' === typeof _time ? _time : (0, _ms2['default'])(_time);
+    key: 'ending',
+    value: function ending() {
+      var time = arguments.length <= 0 || arguments[0] === undefined ? ENDING : arguments[0];
+
+      if (!arguments.length) return this._ending;
+      this._ending = this.tms(time, ENDING);
+      return this;
+    }
+
+    /**
+     * Set time duration.
+     *
+     * @param {Number|String} time
+     * @return {Counter} this
+     * @api public
+     */
+
+  }, {
+    key: 'duration',
+    value: function duration(time) {
+      if (!arguments.length) return this.ms;
+      this.ms = this._duration = this.tms(time, 0);
       return this;
     }
 
@@ -121,8 +146,9 @@ var Counter = (function (_Emitter) {
 
   }, {
     key: 'start',
-    value: function start() {
-      if (Counter.STARTED === this.status || Counter.ENDED === this.status) return this;
+    value: function start(rate) {
+      if (!this.ms || Counter.STARTED === this.status || Counter.ENDED === this.status) return this;
+      if (rate) this.rate(rate);
       this.status = Counter.STARTED;
       this.emits('start', { ms: this.ms });
       setImmediate(this.tick.bind(this));
@@ -139,10 +165,50 @@ var Counter = (function (_Emitter) {
   }, {
     key: 'stop',
     value: function stop() {
-      if (Counter.STOPPED === this.status || Counter.ENDED === this.status) return this;
+      if (Counter.CREATED === this.status || Counter.STOPPED === this.status || Counter.ENDED === this.status) return this;
       this.status = Counter.STOPPED;
       this.emits('stop', { ms: this.ms });
       this.timer.tock.clear(this.ns);
+      return this;
+    }
+
+    /**
+     * Restart (reset and restart) timer.
+     *
+     * @return {Counter} this
+     * @api public
+     */
+
+  }, {
+    key: 'restart',
+    value: function restart(time, rate) {
+      this.reset(time, null, true);
+      this.start(rate);
+      return this;
+    }
+
+    /**
+     * Reset timer.
+     *
+     * @param {Number|String} time
+     * @param {Object} [options]
+     * @param {Boolean} [silent]
+     * @return {Counter} this
+     * @api public
+     */
+
+  }, {
+    key: 'reset',
+    value: function reset(time, options) {
+      var silent = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
+
+      time = time || this._duration;
+      options = options || this.options;
+      if (this.timer.tock.active(this.ns)) {
+        this.timer.tock.clear(this.ns);
+      }
+      this.init(time, options);
+      if (!silent) this.emits('reset', { ms: this.ms });
       return this;
     }
 
@@ -166,31 +232,6 @@ var Counter = (function (_Emitter) {
     }
 
     /**
-     * Reset timer.
-     *
-     * @param {Number|String} time
-     * @param {Object} [options]
-     * @param {Boolean} [silent]
-     * @return {Counter} this
-     * @api public
-     */
-
-  }, {
-    key: 'reset',
-    value: function reset(time, options) {
-      var silent = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
-
-      time = time || this.duration;
-      options = options || this.options;
-      if (this.timer.tock.active(this.ns)) {
-        this.timer.tock.clear(this.ns);
-      }
-      this.init(time, options);
-      if (!silent) this.emits('reset', { ms: this.ms });
-      return this;
-    }
-
-    /**
      * Destroy timer.
      *
      * @return {Counter} this
@@ -203,7 +244,7 @@ var Counter = (function (_Emitter) {
       delete this.ns;
       delete this.duration;
       delete this.ending;
-      delete this.refresh;
+      delete this.rate;
       this.status = Counter.DESTROYED;
       this.emits('delete');
       this.removeAllListeners();
@@ -238,24 +279,41 @@ var Counter = (function (_Emitter) {
     key: 'tick',
     value: function tick() {
       var ctx = this;
-      var ms = ctx.ms;
+      var time = ctx.ms;
       var ending = false;
       var start = Date.now();
       (function next() {
         if (Counter.ENDED === ctx.status) return;
         if (Counter.CREATED === ctx.status) return;
         if (Counter.STOPPED === ctx.status) return;
-        ctx.ms = ms - (Date.now() - start | 0);
+        ctx.ms = time - (Date.now() - start | 0);
         var e = { ms: ctx.ms };
         if (ctx.ms <= 0) return ctx.end();
-        if (!ending && ctx.ms < ctx.ending) {
+        if (!ending && ctx.ms < ctx._ending) {
           ending = true;
           ctx.emits('ending', e);
         }
         ctx.emits('tick', e);
-        ctx.timer.tock.setTimeout(ctx.ns, next, ctx.refresh);
+        ctx.timer.tock.setTimeout(ctx.ns, next, ctx._rate);
       })();
       return this;
+    }
+
+    /**
+     * Transform time to ms or return default value.
+     *
+     * @param {Mixed} time
+     * @param {Number} def
+     * @return {Counter} this
+     * @api private
+     */
+
+  }, {
+    key: 'tms',
+    value: function tms(time, def) {
+      if (!isNaN(time)) return time;
+      time = (0, _ms2['default'])(time);
+      return !isNaN(time) ? time : def;
     }
   }]);
 
@@ -346,6 +404,7 @@ var Timer = (function (_Emitter) {
     key: 'ns',
     value: function ns(id, time, options) {
       var counter = this.counters.get(id);
+      if (1 === arguments.length) return counter;
       if (!counter) {
         counter = new _counter2['default'](this, id, time, options);
         this.counters.set(id, counter);
@@ -363,9 +422,9 @@ var Timer = (function (_Emitter) {
 
   }, {
     key: 'start',
-    value: function start(id) {
+    value: function start(id, rate) {
       var counter = this.counters.get(id);
-      if (counter) counter.start();
+      if (counter) counter.start(rate);
       return this;
     }
 
@@ -382,6 +441,13 @@ var Timer = (function (_Emitter) {
     value: function stop(id) {
       var counter = this.counters.get(id);
       if (counter) counter.stop();
+      return this;
+    }
+  }, {
+    key: 'restart',
+    value: function restart() {
+      var counter = this.counters.get(id);
+      if (counter) counter.restart();
       return this;
     }
 
