@@ -28,20 +28,23 @@ describe('TimeDown', () => {
     countdown.start.should.be.a.Function;
     countdown.stop.should.be.an.Object;
     countdown.reset.should.be.a.Function;
+    countdown.duration.should.be.a.Function;
+    countdown.ending.should.be.a.Function;
+    countdown.refresh.should.be.a.Function;
   });
 
   it('should create a valid countdown instance', () => {
     let ns = TimeDown.id;
     let countdown = timer.ns(ns, '10s');
-    countdown.duration.should.be.eql(10000);
+    countdown.duration().should.be.eql(10000);
     countdown.ns.should.be.eql(ns);
     countdown.status.should.be.eql('CREATED');
   });
 
   it('should create a valid countdown with options', () => {
     let countdown = timer.ns(TimeDown.id, '10s', { ending: '20ms', refresh: '10ms' });
-    countdown.ending.should.be.eql(20);
-    countdown.refresh.should.be.eql(10);
+    countdown.ending().should.be.eql(20);
+    countdown.refresh().should.be.eql(10);
   });
 
   it('should destroy countdown', (done) => {
@@ -53,18 +56,18 @@ describe('TimeDown', () => {
     countdown.start();
     countdown.on('delete', done);
     countdown.delete();
-    (countdown.timer === undefined).should.be.ok;
-    (countdown.ending === undefined).should.be.ok;
-    (countdown.refresh === undefined).should.be.ok;
+    (countdown.duration() === undefined).should.be.ok;
+    (countdown.ending() === undefined).should.be.ok;
+    (countdown.refresh() === undefined).should.be.ok;
     countdown.listeners().should.be.empty();
     countdown.status.should.be.eql('DESTROYED');
   });
 
   it('should be able to change the countdown duration during reset', () => {
     let countdown = timer.ns(TimeDown.id, '10s');
-    countdown.duration.should.be.eql(10000);
+    countdown.duration().should.be.eql(10000);
     countdown.reset('30s');
-    countdown.duration.should.be.eql(30000);
+    countdown.duration().should.be.eql(30000);
   });
 
   it('should emit tick event', (done) => {
@@ -224,6 +227,20 @@ describe('TimeDown', () => {
     countdown.start();
   });
 
+  it('should allow restarting countdown', (done) => {
+    let count = 0;
+    let countdown = timer.ns(TimeDown.id, '100ms');
+    countdown.on('end', function(){
+      count.should.be.eql(2);
+      done();
+    });
+    countdown.on('start', function() {
+      ++count;
+    });
+    countdown.start();
+    countdown.restart();
+  });
+
   it('should allow resetting and starting countdown', (done) => {
     let countdown = timer.ns(TimeDown.id, '100ms');
     countdown.on('end', done);
@@ -231,6 +248,14 @@ describe('TimeDown', () => {
     countdown.reset();
     countdown.start();
     countdown.reset();
+    countdown.start();
+  });
+
+  it('should not start a countdown without duration', () => {
+    let countdown = timer.ns(TimeDown.id, undefined);
+    countdown.on('start', function() {
+      throw Error('Should not start');
+    });
     countdown.start();
   });
 

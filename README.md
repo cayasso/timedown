@@ -27,8 +27,9 @@ foo.stop();
 foo.reset();
 
 // bar counter methods
-bar.start();
+bar.start(20); // refresh rate of 20ms
 bar.stop();
+bar.restart('20ms'); // refresh rate of 20ms
 bar.reset();
 
 // Listen to bar counter events
@@ -36,30 +37,60 @@ bar.on('tick', function(time) {
   console.log(time.ms);
 });
 
+bar.on('start', function(time) {
+  console.log('STARTED', time.ms);
+});
+
 bar.on('ending', function(time) {
   console.log('ENDING', time.ms);
+});
+
+bar.on('stop', function(time) {
+  console.log('STOPPED', time.ms);
+});
+
+bar.on('reset', function(time) {
+  console.log('RESET', time.ms);
 });
 
 bar.on('end', function() {
   console.log('ENDED');
 });
 
+bar.on('delete', function() {
+  console.log('DELETED');
+});
+
 // Handle counters from timer main object
 timer.start('foo');
+timer.start('foo', 20); // 20ms refresh rate
 timer.stop('foo');
-timer.reset('foo', '20s');
+timer.restart('foo', '20ms'); // 20ms refresh rate
+timer.reset('foo'); // reset to initiated values
 
 // Handle counter events from timer main object
 timer.on('tick', function(counter, time) {
   console.log(counter.ns, time.ms);
 });
 
+timer.on('start', function(counter, time) {
+  console.log('STARTED %s with time %d', counter.ns, time.ms);
+});
+
 timer.on('ending', function(counter, time) {
   console.log('ENDING %s with time %d', counter.ns, time.ms);
 });
 
+timer.on('reset', function(counter, time) {
+  console.log('RESET %s with time %d', counter.ns, time.ms);
+});
+
 timer.on('end', function(counter) {
   console.log('ENDED %s', counter.ns);
+});
+
+timer.on('delete', function(counter) {
+  console.log('DELETED %s', counter.ns);
 });
 ```
 
