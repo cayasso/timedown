@@ -181,9 +181,9 @@ var Counter = (function (_Emitter) {
 
   }, {
     key: 'restart',
-    value: function restart(time, rate) {
-      this.reset(time, null, true);
-      this.start(rate);
+    value: function restart(time, options) {
+      this.reset(time, options, true);
+      this.start();
       return this;
     }
 
@@ -402,12 +402,12 @@ var Timer = (function (_Emitter) {
 
   _createClass(Timer, [{
     key: 'ns',
-    value: function ns(id, time, options) {
-      var counter = this.counters.get(id);
+    value: function ns(name, time, options) {
+      var counter = this.counters.get(name);
       if (1 === arguments.length) return counter;
       if (!counter) {
-        counter = new _counter2['default'](this, id, time, options);
-        this.counters.set(id, counter);
+        counter = new _counter2['default'](this, name, time, options);
+        this.counters.set(name, counter);
       }
       return counter;
     }
@@ -416,14 +416,15 @@ var Timer = (function (_Emitter) {
      * Start (resume) timer.
      *
      * @param {String} name
+     * @param {String|Number} rate
      * @return {Timer} this
      * @api public
      */
 
   }, {
     key: 'start',
-    value: function start(id, rate) {
-      var counter = this.counters.get(id);
+    value: function start(name, rate) {
+      var counter = this.counters.get(name);
       if (counter) counter.start(rate);
       return this;
     }
@@ -438,16 +439,26 @@ var Timer = (function (_Emitter) {
 
   }, {
     key: 'stop',
-    value: function stop(id) {
-      var counter = this.counters.get(id);
+    value: function stop(name) {
+      var counter = this.counters.get(name);
       if (counter) counter.stop();
       return this;
     }
+
+    /**
+     * Stop (pause) timer.
+     *
+     * @param {String|Number} time
+     * @param {Object} [options]
+     * @return {Timer} this
+     * @api public
+     */
+
   }, {
     key: 'restart',
-    value: function restart() {
-      var counter = this.counters.get(id);
-      if (counter) counter.restart();
+    value: function restart(time, options) {
+      var counter = this.counters.get(name);
+      if (counter) counter.restart(time, options);
       return this;
     }
 
@@ -457,32 +468,33 @@ var Timer = (function (_Emitter) {
      * @param {String} name
      * @param {Number|String} time
      * @param {Object} [options]
+     * @param {Object} silent
      * @return {Timer} this
-     * @api private
+     * @api public
      */
 
   }, {
     key: 'reset',
-    value: function reset(id, time, options) {
-      var counter = this.counters.get(id);
-      if (counter) counter.reset(time, options);
+    value: function reset(name, time, options, silent) {
+      var counter = this.counters.get(name);
+      if (counter) counter.reset(time, options, silent);
       return this;
     }
 
     /**
      * Destroy timer.
      *
-     * @param {String} id
+     * @param {String} name
      * @return {Timer} this
-     * @api private
+     * @api public
      */
 
   }, {
     key: 'delete',
-    value: function _delete(id) {
-      var counter = this.counters.get(id);
+    value: function _delete(name) {
+      var counter = this.counters.get(name);
       if (!counter) return this;
-      this.counters['delete'](id);
+      this.counters['delete'](name);
       counter['delete']();
       return this;
     }
