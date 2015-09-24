@@ -25,12 +25,14 @@ var bar = timer.ns('bar', '10s');
 foo.start();
 foo.stop();
 foo.reset();
+bar.delete();
 
 // bar counter methods
 bar.start(20); // refresh rate of 20ms
 bar.stop();
-bar.restart('20ms'); // refresh rate of 20ms
+bar.restart('200ms', { refresh: '20ms'}); // restart timer with duration of 200ms
 bar.reset();
+bar.delete();
 
 // Listen to bar counter events
 bar.on('tick', function(time) {
@@ -65,8 +67,9 @@ bar.on('delete', function() {
 timer.start('foo');
 timer.start('foo', 20); // 20ms refresh rate
 timer.stop('foo');
-timer.restart('foo', '20ms'); // 20ms refresh rate
+timer.restart('foo', '200ms'); // restart timer with duration of 200ms
 timer.reset('foo'); // reset to initiated values
+timer.delete('foo');
 
 // Handle counter events from timer main object
 timer.on('tick', function(counter, time) {
