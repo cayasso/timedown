@@ -294,7 +294,7 @@ var Counter = (function (_Emitter) {
           ctx.emits('ending', e);
         }
         ctx.emits('tick', e);
-        ctx.timer.tock.setTimeout(ctx.ns, next, ctx._rate);
+        ctx.timer.tock.setTimeout(ctx.ns, next, ctx._refresh);
       })();
       return this;
     }
@@ -408,6 +408,8 @@ var Timer = (function (_Emitter) {
       if (!counter) {
         counter = new _counter2['default'](this, name, time, options);
         this.counters.set(name, counter);
+      } else {
+        counter.reset(time, options, true);
       }
       return counter;
     }
